@@ -6,7 +6,16 @@ const path = require('path');
 const fs = require('fs');
 const tenantManager = require('../../../../../Common/sources/tenantManager');
 const runtimeConfigManager = require('../../../../../Common/sources/runtimeConfigManager');
-const {getScopedConfig, getScopedBaseConfig, validateScoped, getDiffFromBase, getFullConfigRedacted} = require('./config.service');
+const taskResult = require('../../../../../DocService/sources/taskresult');
+const {
+  getScopedConfig,
+  getScopedBaseConfig,
+  validateScoped,
+  getDiffFromBase,
+  getFullConfigRedacted,
+  diffContainsFileLimits,
+  pathsAffectFileLimits
+} = require('./config.service');
 const {validateJWT} = require('../../middleware/auth');
 const cookieParser = require('cookie-parser');
 const utils = require('../../../../../Common/sources/utils');
@@ -84,6 +93,11 @@ router.patch('/', validateJWT, rawFileParser, async (req, res) => {
     } else {
       await runtimeConfigManager.replaceConfig(ctx, diffConfig);
     }
+
+    if (diffContainsFileLimits(diffConfig)) {
+      taskResult.resetDocumentStatusesForFileLimits(ctx);
+    }
+
     const filteredConfig = getScopedConfig(ctx);
 
     res.status(200).json(utils.deepMergeObjects(filteredConfig, validationResult.value));
@@ -147,6 +161,10 @@ router.post('/reset', validateJWT, rawFileParser, async (req, res) => {
       await tenantManager.replaceTenantConfig(ctx, resetConfig);
     } else {
       await runtimeConfigManager.replaceConfig(ctx, resetConfig);
+    }
+
+    if (pathsAffectFileLimits(paths)) {
+      taskResult.resetDocumentStatusesForFileLimits(ctx);
     }
 
     delete resetConfig.adminPanel;

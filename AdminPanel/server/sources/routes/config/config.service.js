@@ -110,6 +110,29 @@ function getDiffFromBase(_ctx, currentConfig, incomingConfig) {
   return removeEmptyObjects(diff);
 }
 
+/**
+ * Returns true if diff object contains any of the file limit config paths (nested keys).
+ * Use after getDiffFromBase to decide if document status reset is needed.
+ * @param {Object} diff - Config diff object (e.g. from getDiffFromBase)
+ * @returns {boolean}
+ */
+function diffContainsFileLimits(diff) {
+  if (!diff || typeof diff !== 'object') return false;
+  const converter = diff.FileConverter && diff.FileConverter.converter;
+  return Boolean(converter && (converter.inputLimits !== undefined || converter.maxDownloadBytes !== undefined));
+}
+
+/**
+ * Returns true if paths array affects file limits (e.g. reset of limits).
+ * @param {string[]} paths - Paths being reset (e.g. from POST /reset body)
+ * @returns {boolean}
+ */
+function pathsAffectFileLimits(paths) {
+  if (!paths || !paths.length) return false;
+  if (paths.includes('*')) return true;
+  return paths.some(p => p.startsWith('FileConverter.converter.inputLimits') || p.startsWith('FileConverter.converter.maxDownloadBytes'));
+}
+
 function isAdminScope(ctx) {
   return tenantManager.isDefaultTenant(ctx);
 }
@@ -236,4 +259,13 @@ function getFullConfigRedacted(ctx) {
   return redactSensitiveParams(cfg, SENSITIVE_PARAM_PATHS);
 }
 
-module.exports = {validateScoped, getScopedBaseConfig, filterAdmin, getDiffFromBase, getFullConfigRedacted, getScopedConfig};
+module.exports = {
+  validateScoped,
+  getScopedBaseConfig,
+  filterAdmin,
+  getDiffFromBase,
+  getFullConfigRedacted,
+  getScopedConfig,
+  diffContainsFileLimits,
+  pathsAffectFileLimits
+};
