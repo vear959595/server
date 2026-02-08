@@ -324,7 +324,7 @@ docsCoServer.install(server, app, () => {
   const fileForms = multer({limits: {fieldSize: cfgDownloadMaxBytes}});
   app.get('/hosting/discovery', checkWopiEnable, utils.checkClientIp, wopiClient.discovery);
   app.get('/hosting/capabilities', checkWopiEnable, utils.checkClientIp, wopiClient.collaboraCapabilities);
-  app.post('/lool/convert-to/:format?', checkWopiEnable, utils.checkClientIp, urleEcodedParser, fileForms.any(), converterService.convertTo);
+  app.post('/lool/convert-to/:format?', utils.checkClientIp, urleEcodedParser, fileForms.any(), converterService.convertTo);
   app.post('/cool/convert-to/:format?', checkWopiEnable, utils.checkClientIp, urleEcodedParser, fileForms.any(), converterService.convertTo);
   app.post(
     '/hosting/wopi/:documentType/:mode',
